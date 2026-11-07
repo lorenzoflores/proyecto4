@@ -19,8 +19,11 @@ COPY --from=deps --chown=node:node /app/node_modules ./node_modules
 COPY --chown=node:node package.json ./
 COPY --chown=node:node src ./src
 
-# Carpeta de subidas (en Railway se monta un volumen encima).
-RUN mkdir -p /data/uploads && chown -R node:node /data
+# Carpeta de subidas (en Railway se monta un volumen encima) y fuera npm y yarn:
+# en producción no se instalan paquetes, y cuanto menos haya, menos se puede atacar.
+RUN mkdir -p /data/uploads && chown -R node:node /data \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx \
+           /opt/yarn* /usr/local/bin/yarn /usr/local/bin/yarnpkg
 
 # No ejecutar como root: si alguien compromete la app, no controla el contenedor.
 USER node
