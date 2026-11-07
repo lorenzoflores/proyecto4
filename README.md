@@ -66,3 +66,33 @@ Los tests usan una base de datos PostgreSQL real (por defecto `postgres://postgr
 npm test
 npm run lint
 ```
+
+## Docker
+
+La imagen se construye en dos etapas: la primera instala solo las dependencias de producción con `npm ci --omit=dev` y la segunda copia esas dependencias y `src/`, sin tests ni secretos. La API corre con el usuario `node`, no como root, y la imagen incluye un `HEALTHCHECK` contra `/health`.
+
+Para levantar la API y PostgreSQL en local:
+
+```bash
+cp .env.example .env        # rellena JWT_SECRET
+docker compose up --build
+curl localhost:3000/health
+```
+
+La base de datos no publica puertos hacia fuera: solo la ve la API, por la red interna de compose. Los ficheros subidos y los datos de PostgreSQL se guardan en volúmenes (`uploads` y `pgdata`), así que sobreviven a `docker compose down`. Para borrarlos también, usa `docker compose down -v`.
+
+## Despliegue en Railway
+
+`railway.json` le dice a Railway que construya con el `Dockerfile` y que espere a que `/health` responda antes de dar por bueno un despliegue.
+
+1. Crea un proyecto en Railway desde este repositorio de GitHub.
+2. Añade un servicio **PostgreSQL**.
+3. En el servicio de la API, define estas variables:
+   - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}`, una referencia a la base de datos, nunca la URL copiada a mano.
+   - `JWT_SECRET`, generado con el comando de arriba y distinto para cada entorno.
+   - `TRUST_PROXY` = `1`. Railway pone un proxy delante, y sin esto el rate limit trataría a todos los clientes como si fueran una sola IP.
+   - `RAILWAY_RUN_UID` = `0`. Railway monta los volúmenes como root, así que esto permite escribir en el volumen.
+4. Añade un **volumen** al servicio de la API montado en `/data/uploads`. Sin volumen, los ficheros se pierden en cada despliegue.
+5. En *Settings → Networking*, genera un dominio público.
+
+Las migraciones se aplican solas al arrancar.

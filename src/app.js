@@ -5,10 +5,14 @@ const helmet = require('helmet');
 const authRoutes = require('./routes/auth.routes');
 const filesRoutes = require('./routes/files.routes');
 const healthRoutes = require('./routes/health.routes');
+const config = require('./config');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 
 function createApp() {
   const app = express();
+
+  // Detrás de un proxy (Railway), la IP real del cliente llega en X-Forwarded-For.
+  app.set('trust proxy', config.TRUST_PROXY);
 
   // Cabeceras de seguridad (y quita X-Powered-By, que revela que usamos Express).
   app.use(helmet());

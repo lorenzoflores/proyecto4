@@ -16,6 +16,10 @@ const schema = z.object({
   UPLOAD_DIR: z.string().default('./uploads'),
   MAX_FILE_SIZE_BYTES: z.coerce.number().int().positive().default(10 * 1024 * 1024),
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
+  // Número de proxies delante de la API (Railway pone 1). Sin esto, detrás de
+  // un proxy todas las peticiones parecen venir de la misma IP y el rate limit
+  // bloquearía a todos a la vez. 0 = sin proxy (local).
+  TRUST_PROXY: z.coerce.number().int().min(0).default(0),
 });
 
 const parsed = schema.safeParse(process.env);
