@@ -8,21 +8,21 @@ Es el repositorio de referencia del curso. Cada sesión tiene su solución compl
 
 | Rama | Contenido |
 | --- | --- |
-| `main` | Solo versiones publicadas. Es lo que está en producción. |
+| `main` | Solo releases. Cada integración se despliega en staging; cada tag `vX.Y.Z` sobre `main`, en producción. |
 | `develop` | Rama de desarrollo. Las sesiones se integran aquí al terminar. |
 | `feature/sesion1` | API, autenticación JWT, validación, auditoría de seguridad y secretos. |
 | `feature/sesion2` | Docker, docker-compose y despliegue en Railway. |
 | `feature/sesion3` | Pipeline de CI/CD con auditoría automática del agente. |
 | `feature/sesion4` | Logs estructurados, Sentry y métricas. |
-| `release/x.y.z` | Versión candidata. Se despliega en staging, se etiqueta y se integra en `main`. |
+| `release/x.y.z` | Versión candidata. Se integra en `main` (y así llega a staging) y después en `develop`. |
 | `demo/vulnerabilidad` | Práctica de la sesión 3: un PR con una vulnerabilidad que el agente debe bloquear. **No se integra nunca.** |
 | `demo/error-borrado` | Práctica de la sesión 4: el error simulado que se despliega en staging para diagnosticarlo. **No se integra nunca.** |
 
 Flujo (siempre con pull request e historia lineal):
 
 1. `feature/sesionX` sale de `develop`. Antes de integrarla, se rebasa sobre `develop` (`git rebase origin/develop`) y vuelve a `develop` con un PR, por *rebase* o *squash*.
-2. Al final, de `develop` sale `release/1.0.0` y se prueba en staging.
-3. Se rebasa sobre `main` y se integra con un PR. Después se crea el tag `v1.0.0` sobre `main`, que es producción.
+2. Al final, de `develop` sale `release/1.0.0`. Se rebasa sobre `main` y se integra con un PR: el despliegue en staging es automático.
+3. Cuando staging está bien, se crea el tag `v1.0.0` sobre `main` y se sube: eso despliega en producción (despliegue manual, con aprobación).
 4. Se integra de vuelta en `develop` con otro PR.
 
 `develop` y `main` están protegidas: no admiten push directo ni commits de merge, y todo entra por pull request.
