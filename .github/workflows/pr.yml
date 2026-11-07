@@ -1,9 +1,9 @@
-# En cada pull request contra develop: comprobaciones + revisión de seguridad del agente.
+# En cada pull request contra develop o main: comprobaciones + revisión de seguridad del agente.
 name: Pull request
 
 on:
   pull_request:
-    branches: [develop]
+    branches: [develop, main]
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}
