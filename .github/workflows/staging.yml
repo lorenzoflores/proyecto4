@@ -1,9 +1,9 @@
-# Al subir a una rama release/x.y.z: comprobaciones y despliegue en staging.
+# Al integrar en main (la release ya aprobada en su PR): comprobaciones y despliegue automático en staging.
 name: Staging
 
 on:
   push:
-    branches: ['release/**']
+    branches: [main]
 
 concurrency:
   group: staging
