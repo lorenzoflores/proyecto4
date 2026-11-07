@@ -6,10 +6,10 @@
 | --- | --- | --- |
 | `ci.yml` | Lo llaman los otros tres | Lint y tests con PostgreSQL, `npm audit` de producción, búsqueda de secretos con gitleaks y `docker build`. |
 | `pr.yml` | Pull request contra `develop` | `ci.yml` y además la auditoría de seguridad de Claude Code: deja un comentario en el PR y bloquea el merge si encuentra algo crítico o alto. |
-| `staging.yml` | Push a `release/**` | `ci.yml`, despliegue en el entorno `staging` de Railway y comprobación de `/health`. |
-| `production.yml` | Push a `main` | `ci.yml`, despliegue en el entorno `production` de Railway y comprobación de `/health`. |
+| `staging.yml` | Push a `main` (al integrar la release) | `ci.yml`, despliegue automático en el entorno `staging` de Railway y comprobación de `/health`. |
+| `production.yml` | Push de un tag `v*` | Comprueba que el tag apunta a un commit de `main`, `ci.yml`, despliegue en el entorno `production` de Railway (tras la aprobación manual) y comprobación de `/health`. |
 
-Cada despliegue solo se lanza si `ci.yml` termina en verde.
+Cada despliegue solo se lanza si `ci.yml` termina en verde. Staging es automático: basta con integrar en `main`. Producción es manual: solo se despliega cuando alguien crea y sube el tag de la versión, y además el entorno `production` pide aprobación.
 
 ## 1. Railway
 
@@ -27,7 +27,7 @@ En *Settings → Environments*, crea `staging` y `production`. En cada uno, aña
 | Variable | `RAILWAY_SERVICE` | El nombre del servicio de la API en Railway. |
 | Variable | `APP_URL` | La URL pública, por ejemplo `https://proyecto4-staging.up.railway.app`. |
 
-En `production`, activa **Required reviewers**: el despliegue esperará a que alguien lo apruebe.
+En `production`, activa **Required reviewers**: el despliegue esperará a que alguien lo apruebe. En *Deployment branches and tags*, elige **Selected branches and tags** y añade la regla de tag `v*`, para que este entorno (y su token) solo se pueda usar desde un tag de versión. En `staging`, limita igual el entorno a la rama `main`.
 
 En *Settings → Secrets and variables → Actions*, añade el secreto `ANTHROPIC_API_KEY` a nivel de repositorio. Lo usa la revisión del agente. Instala también la app de Claude en el repositorio (en Claude Code, con `/install-github-app`).
 
@@ -76,16 +76,17 @@ Después de integrar la sesión 1, `feature/sesion2` sigue apuntando a los commi
 git checkout -b release/1.0.0 origin/develop
 npm version 1.0.0 --no-git-tag-version       # la versión que verá Sentry
 git commit -am "Versión 1.0.0"
-git push -u origin release/1.0.0             # → staging.yml despliega en staging
-# probar en staging; si hay que arreglar algo, commit en release/1.0.0 y push
-
-git rebase origin/main && git push --force-with-lease
+git rebase origin/main
+git push -u origin release/1.0.0
 gh pr create --base main --head release/1.0.0 --title "Release 1.0.0"
-gh pr merge --rebase                         # → production.yml despliega en producción
+gh pr merge --rebase                         # → staging.yml despliega en staging (automático)
 
-# El tag se pone DESPUÉS, sobre main: así apunta a lo que está en producción.
+# Probar en staging. Si hay que arreglar algo: commit en release/1.0.0, push y otro PR a main.
+
+# Producción es manual: se crea el tag sobre main cuando staging está bien.
+# El tag va DESPUÉS de integrar porque el rebase de GitHub cambia los SHA.
 git fetch origin && git tag -a v1.0.0 origin/main -m "Versión 1.0.0"
-git push origin v1.0.0
+git push origin v1.0.0                       # → production.yml despliega en producción (tras aprobar)
 
 git checkout release/1.0.0 && git rebase origin/develop && git push --force-with-lease
 gh pr create --base develop --head release/1.0.0 --title "Release 1.0.0 a develop"
