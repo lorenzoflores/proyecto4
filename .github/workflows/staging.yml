@@ -1,0 +1,43 @@
+# Al subir a una rama release/x.y.z: comprobaciones y despliegue en staging.
+name: Staging
+
+on:
+  push:
+    branches: ['release/**']
+
+concurrency:
+  group: staging
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Desplegar en staging
+    needs: ci
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: ${{ vars.APP_URL }}
+    env:
+      # Token de proyecto de Railway: solo puede desplegar en este entorno.
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm install -g @railway/cli@5
+      - run: railway up --ci --service "${{ vars.RAILWAY_SERVICE }}" --environment staging
+
+  smoke:
+    name: Comprobar /health
+    needs: deploy
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - run: curl --fail --retry 10 --retry-delay 6 --retry-all-errors "${{ vars.APP_URL }}/health"

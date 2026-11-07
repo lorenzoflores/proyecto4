@@ -1,0 +1,44 @@
+# Al integrar en main (una release ya probada en staging): despliegue en producción.
+name: Producción
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Desplegar en producción
+    needs: ci
+    runs-on: ubuntu-latest
+    # El entorno "production" puede exigir aprobación manual (Settings → Environments).
+    environment:
+      name: production
+      url: ${{ vars.APP_URL }}
+    env:
+      # Token de proyecto de Railway: solo puede desplegar en este entorno.
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm install -g @railway/cli@5
+      - run: railway up --ci --service "${{ vars.RAILWAY_SERVICE }}" --environment production
+
+  smoke:
+    name: Comprobar /health
+    needs: deploy
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - run: curl --fail --retry 10 --retry-delay 6 --retry-all-errors "${{ vars.APP_URL }}/health"

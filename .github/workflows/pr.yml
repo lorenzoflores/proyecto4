@@ -1,0 +1,51 @@
+# En cada pull request contra develop: comprobaciones + revisión de seguridad del agente.
+name: Pull request
+
+on:
+  pull_request:
+    branches: [develop]
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  agent-review:
+    name: Revisión de seguridad (Claude Code)
+    runs-on: ubuntu-latest
+    # Los PR desde forks no tienen acceso a los secretos: no se puede revisar.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Eres un revisor de seguridad. Revisa SOLO los cambios de este pull request
+            (git diff origin/${{ github.base_ref }}...HEAD) en una API de ficheros con Node y Express.
+
+            Busca en concreto:
+            - Rutas de /files sin requireAuth o consultas sin filtrar por user_id (IDOR).
+            - Datos de entrada sin validar con zod.
+            - Uso del nombre de fichero del cliente para rutas en disco (path traversal).
+            - Secretos, tokens o contraseñas escritos en el código.
+            - Errores que devuelvan stack traces o detalles internos al cliente.
+            - Dependencias nuevas innecesarias o sospechosas.
+
+            Publica un único comentario en el PR, en español, con una tabla
+            (gravedad, fichero:línea, problema, cómo arreglarlo). Si no encuentras
+            nada relevante, dilo en una línea. No inventes problemas.
+          claude_args: |
+            --allowedTools "Bash(git diff:*),Bash(git log:*),Read,Grep,Glob,Bash(gh pr comment:*)"

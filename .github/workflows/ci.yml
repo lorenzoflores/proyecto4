@@ -1,0 +1,69 @@
+# Comprobaciones comunes: las reutilizan pr.yml, staging.yml y production.yml.
+name: CI
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Lint y tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ficheros_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/ficheros_test
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  audit:
+    name: Auditoría de dependencias
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      # Falla si alguna dependencia de producción tiene una vulnerabilidad alta o crítica.
+      - run: npm audit --omit=dev --audit-level=high
+
+  secrets:
+    name: Búsqueda de secretos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      # Revisa todo el historial: un secreto borrado en un commit posterior sigue en Git.
+      - name: gitleaks
+        run: |
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.28.0 \
+            git /repo --redact --verbose
+
+  docker:
+    name: Construir imagen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: docker build -t proyecto4:${{ github.sha }} .

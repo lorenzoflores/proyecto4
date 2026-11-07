@@ -96,3 +96,7 @@ La base de datos no publica puertos hacia fuera: solo la ve la API, por la red i
 5. En *Settings → Networking*, genera un dominio público.
 
 Las migraciones se aplican solas al arrancar.
+
+## CI/CD
+
+Los workflows están en `.github/workflows`. Cómo configurarlos (Railway, secretos y protección de ramas) está explicado en [docs/ci-cd.md](docs/ci-cd.md).
