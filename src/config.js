@@ -20,9 +20,18 @@ const schema = z.object({
   // un proxy todas las peticiones parecen venir de la misma IP y el rate limit
   // bloquearía a todos a la vez. 0 = sin proxy (local).
   TRUST_PROXY: z.coerce.number().int().min(0).default(0),
+  // Observabilidad (sesión 4)
+  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+  // Sin DSN, Sentry no envía nada (útil en local y en tests).
+  SENTRY_DSN: z.url().optional(),
+  SENTRY_ENVIRONMENT: z.string().optional(),
+  // Sin token, /metrics no existe (404): nunca queda público por descuido.
+  METRICS_TOKEN: z.string().min(16, 'METRICS_TOKEN debe tener al menos 16 caracteres').optional(),
 });
 
-const parsed = schema.safeParse(process.env);
+// Una variable vacía (SENTRY_DSN=) cuenta como no definida.
+const env = Object.fromEntries(Object.entries(process.env).filter(([, value]) => value !== ''));
+const parsed = schema.safeParse(env);
 
 if (!parsed.success) {
   const problems = parsed.error.issues
@@ -33,4 +42,8 @@ if (!parsed.success) {
   process.exit(1);
 }
 
-module.exports = Object.freeze(parsed.data);
+// La release de Sentry es la versión de package.json, que se sube al crear
+// cada release/x.y.z: así cada error queda ligado al tag vx.y.z desplegado.
+const { name, version } = require('../package.json');
+
+module.exports = Object.freeze({ ...parsed.data, RELEASE: `${name}@${version}` });

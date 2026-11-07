@@ -5,6 +5,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const pool = require('./pool');
+const logger = require('../logger');
 
 const MIGRATIONS_DIR = path.join(__dirname, 'migrations');
 
@@ -30,7 +31,7 @@ async function migrate() {
         await client.query(sql);
         await client.query('INSERT INTO schema_migrations (name) VALUES ($1)', [file]);
         await client.query('COMMIT');
-        console.log(`Migración aplicada: ${file}`);
+        logger.info({ migration: file }, 'Migración aplicada');
       } catch (err) {
         await client.query('ROLLBACK');
         throw err;
@@ -47,7 +48,7 @@ if (require.main === module) {
   migrate()
     .then(() => pool.end())
     .catch((err) => {
-      console.error('Error al migrar:', err.message);
+      logger.fatal({ err }, 'Error al migrar');
       process.exit(1);
     });
 }

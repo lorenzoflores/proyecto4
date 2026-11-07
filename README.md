@@ -100,3 +100,7 @@ Las migraciones se aplican solas al arrancar.
 ## CI/CD
 
 Los workflows están en `.github/workflows`. Cómo configurarlos (Railway, secretos y protección de ramas) está explicado en [docs/ci-cd.md](docs/ci-cd.md).
+
+## Observabilidad
+
+La API tiene logs JSON con reqId (pino), errores en Sentry y métricas en `/metrics` (prom-client, protegidas con token). Lo cuenta [docs/observabilidad.md](docs/observabilidad.md), que también explica el error simulado de la práctica.

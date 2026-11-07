@@ -35,7 +35,8 @@ function errorHandler(err, req, res, next) {
       .json({ error: { code: 'BODY_TOO_LARGE', message: 'Cuerpo de la petición demasiado grande' } });
   }
 
-  console.error(err);
+  // pino-http ya registra la petición como error; aquí añadimos el detalle.
+  req.log.error({ err }, 'Error no controlado');
   return res.status(500).json({ error: { code: 'INTERNAL', message: 'Error interno del servidor' } });
 }
 

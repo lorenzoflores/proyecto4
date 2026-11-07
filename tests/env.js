@@ -12,3 +12,4 @@ process.env.JWT_EXPIRES_IN = '1h';
 process.env.UPLOAD_DIR = path.join(os.tmpdir(), 'proyecto4-test-uploads');
 process.env.MAX_FILE_SIZE_BYTES = String(1024 * 1024); // 1 MB en tests
 process.env.AUTH_RATE_LIMIT_MAX = '1000';
+process.env.METRICS_TOKEN = 'token-de-metricas-para-tests';

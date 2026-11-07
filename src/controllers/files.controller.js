@@ -1,9 +1,12 @@
 'use strict';
 
 const filesService = require('../services/files.service');
+const { filesUploaded } = require('../metrics');
 
 async function upload(req, res) {
   const file = await filesService.upload(req.user.id, req.file);
+  filesUploaded.inc();
+  req.log.info({ fileId: file.id, sizeBytes: file.sizeBytes, mimeType: file.mimeType }, 'Fichero subido');
   res.status(201).json(file);
 }
 
@@ -25,6 +28,7 @@ async function download(req, res, next) {
 
 async function remove(req, res) {
   await filesService.remove(req.user.id, req.validated.params.id);
+  req.log.info({ fileId: req.validated.params.id }, 'Fichero borrado');
   res.status(204).end();
 }
 
