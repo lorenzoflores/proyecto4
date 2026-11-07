@@ -19,8 +19,7 @@ function requireAuth(req, res, next) {
     const payload = jwt.verify(token, config.JWT_SECRET, { algorithms: ['HS256'] });
     req.user = { id: payload.sub };
     // En Sentry, el usuario se identifica solo por su id: ni email ni token.
-    // ip_address: null evita que Sentry deduzca la IP de la petición.
-    Sentry.setUser({ id: payload.sub, ip_address: null });
+    Sentry.setUser({ id: payload.sub });
     return next();
   } catch {
     return next(new AppError(401, 'Token no válido o caducado', 'UNAUTHORIZED'));

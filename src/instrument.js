@@ -13,4 +13,9 @@ Sentry.init({
   // No enviar datos personales por defecto (IP, cabeceras, cuerpos).
   sendDefaultPii: false,
   tracesSampleRate: 0,
+  // Aun sin PII, el SDK añade la IP del cliente: la quitamos antes de enviar.
+  beforeSend(event) {
+    if (event.user) delete event.user.ip_address;
+    return event;
+  },
 });
