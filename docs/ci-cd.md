@@ -36,8 +36,9 @@ En *Settings → Secrets and variables → Actions*, añade el secreto `ANTHROPI
 En *Settings → Rules → Rulesets*, crea una regla para `develop` y otra para `main` con estas opciones:
 
 - **Restrict deletions** y **Block force pushes**.
-- **Require a pull request before merging**, con 0 aprobaciones obligatorias si trabajas solo (GitHub no deja aprobar tu propio PR) y **Allowed merge methods: Merge**.
-- **Require status checks to pass**, con `ci / Lint y tests`, `ci / Auditoría de dependencias`, `ci / Búsqueda de secretos` y `ci / Construir imagen`.
+- **Require a pull request before merging**, con 0 aprobaciones obligatorias si trabajas solo (GitHub no deja aprobar tu propio PR) y **Allowed merge methods: Squash y Rebase**, sin merge commit.
+- **Require linear history**, para que no entre ningún commit de merge.
+- **Require status checks to pass**, con **Require branches to be up to date before merging** marcado (obliga a rebasar antes de integrar) y los checks `ci / Lint y tests`, `ci / Auditoría de dependencias`, `ci / Búsqueda de secretos` y `ci / Construir imagen`.
 
 En `main`, además, permite solo los merges que vengan de `release/*`. Esto se revisa en el PR de la release.
 
@@ -51,34 +52,42 @@ Ten en cuenta sus límites:
 
 Por eso complementa la revisión de una persona, pero no la sustituye.
 
-## 4. Flujo de trabajo (Oneflow, siempre con pull requests)
+## 4. Flujo de trabajo (Oneflow, siempre con pull requests e historia lineal)
 
-Nadie hace push directo a `develop` ni a `main`: todo entra por PR, y el PR solo se puede integrar con los checks en verde.
+Nadie hace push directo a `develop` ni a `main`. Todo entra por PR, con los checks en verde y la rama rebasada sobre el destino. GitHub no tiene un botón de merge *fast-forward only*. Lo más parecido es integrar con **Rebase and merge** (o **Squash and merge**) después de rebasar: la historia queda lineal, como en un fast-forward, aunque GitHub vuelve a crear los commits con otro SHA.
 
 **Cada sesión (feature → develop)**
 
 ```bash
-git push -u origin feature/sesion1
-gh pr create --base develop --head feature/sesion1 --title "Sesión 1"
+git fetch origin
+git checkout feature/sesion2
+git rebase origin/develop                    # siempre, antes de integrar
+git push --force-with-lease                  # la rama feature es tuya: se puede reescribir
+gh pr create --base develop --head feature/sesion2 --title "Sesión 2"
 # esperar a los checks (tests, auditoría, revisión del agente) y revisar
-gh pr merge --merge --delete-branch=false
+gh pr merge --rebase                         # o --squash para dejar un solo commit
 ```
+
+Después de integrar la sesión 1, `feature/sesion2` sigue apuntando a los commits antiguos de la sesión 1. Al rebasarla sobre `develop`, Git detecta que esos cambios ya están y los salta: solo quedan los de la sesión 2.
 
 **La release (release → main y release → develop)**
 
 ```bash
 git checkout -b release/1.0.0 origin/develop
-npm version 1.0.0 --no-git-tag-version         # la versión que verá Sentry
+npm version 1.0.0 --no-git-tag-version       # la versión que verá Sentry
 git commit -am "Versión 1.0.0"
-git push -u origin release/1.0.0               # → staging.yml despliega en staging
+git push -u origin release/1.0.0             # → staging.yml despliega en staging
 # probar en staging; si hay que arreglar algo, commit en release/1.0.0 y push
-git tag -a v1.0.0 -m "Versión 1.0.0"
+
+git rebase origin/main && git push --force-with-lease
+gh pr create --base main --head release/1.0.0 --title "Release 1.0.0"
+gh pr merge --rebase                         # → production.yml despliega en producción
+
+# El tag se pone DESPUÉS, sobre main: así apunta a lo que está en producción.
+git fetch origin && git tag -a v1.0.0 origin/main -m "Versión 1.0.0"
 git push origin v1.0.0
 
-gh pr create --base main --head release/1.0.0 --title "Release 1.0.0"
-gh pr merge --merge                            # → production.yml despliega en producción
+git checkout release/1.0.0 && git rebase origin/develop && git push --force-with-lease
 gh pr create --base develop --head release/1.0.0 --title "Release 1.0.0 a develop"
-gh pr merge --merge --delete-branch
+gh pr merge --rebase --delete-branch
 ```
-
-Integra siempre con **merge commit** (`--merge`), no con squash ni rebase: así el commit etiquetado `v1.0.0` queda tal cual en la historia de `main` y de `develop`.
