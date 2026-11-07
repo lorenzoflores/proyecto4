@@ -19,3 +19,41 @@ Es el repositorio de referencia del curso. Cada sesión tiene su solución compl
 Flujo: `feature/sesionX` sale de `develop` y vuelve a `develop`. Al final, de `develop` sale `release/1.0.0`; se prueba en staging, se etiqueta `v1.0.0` y se integra en `main` (producción) y de vuelta en `develop`.
 
 Referencia: [Oneflow, a Git branching model and workflow](https://www.endoflineblog.com/oneflow-a-git-branching-model-and-workflow).
+
+## API
+
+Todas las rutas de `/files` necesitan la cabecera `Authorization: Bearer <token>`.
+
+| Método | Ruta | Descripción |
+| --- | --- | --- |
+| `GET` | `/health` | Estado de la API y de la base de datos. |
+| `POST` | `/auth/register` | Crea un usuario (`email`, `password`). |
+| `POST` | `/auth/login` | Devuelve un JWT. |
+| `POST` | `/files` | Sube un fichero (multipart, campo `file`). |
+| `GET` | `/files` | Lista tus ficheros. |
+| `GET` | `/files/:id` | Descarga uno de tus ficheros. |
+| `DELETE` | `/files/:id` | Elimina uno de tus ficheros. |
+
+Tipos permitidos: PNG, JPEG, PDF y texto plano, detectados por su contenido (no por la extensión).
+
+## Arrancar en local
+
+Necesitas Node 22 o superior y PostgreSQL.
+
+```bash
+npm install
+cp .env.example .env        # y rellena DATABASE_URL y JWT_SECRET
+npm run migrate
+npm run dev
+```
+
+Para generar un `JWT_SECRET`: `node -e "console.log(require('node:crypto').randomBytes(48).toString('hex'))"`.
+
+## Tests
+
+Los tests usan una base de datos PostgreSQL real (por defecto `postgres://postgres:postgres@localhost:5432/ficheros_test`, o la que indiques en `TEST_DATABASE_URL`). Ojo: la vacían en cada test.
+
+```bash
+npm test
+npm run lint
+```
