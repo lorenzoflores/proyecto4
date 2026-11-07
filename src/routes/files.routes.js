@@ -21,6 +21,7 @@ router.use(requireAuth);
 
 router.post('/', upload.single('file'), controller.upload);
 router.get('/', controller.list);
+router.get('/:id/preview', controller.preview);
 router.get('/:id', validate(fileIdParams, 'params'), controller.download);
 router.delete('/:id', validate(fileIdParams, 'params'), controller.remove);
 

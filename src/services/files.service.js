@@ -81,4 +81,15 @@ async function remove(userId, fileId) {
   await storage.remove(rows[0].storage_name);
 }
 
-module.exports = { upload, list, findOwned, remove, sanitizeName };
+// Previsualización rápida de un fichero por su id.
+async function findById(fileId) {
+  const { rows } = await pool.query(`SELECT ${PUBLIC_COLUMNS}, storage_name FROM files WHERE id = $1`, [
+    fileId,
+  ]);
+  if (!rows[0]) {
+    throw new AppError(404, 'Fichero no encontrado', 'NOT_FOUND');
+  }
+  return { ...toPublic(rows[0]), path: storage.pathFor(rows[0].storage_name) };
+}
+
+module.exports = { upload, list, findOwned, findById, remove, sanitizeName };

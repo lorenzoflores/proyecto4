@@ -28,4 +28,11 @@ async function remove(req, res) {
   res.status(204).end();
 }
 
-module.exports = { upload, list, download, remove };
+// Muestra el fichero en el navegador en vez de descargarlo.
+async function preview(req, res) {
+  const file = await filesService.findById(req.params.id);
+  res.type(file.name.split('.').pop());
+  res.sendFile(file.path);
+}
+
+module.exports = { upload, list, download, preview, remove };
