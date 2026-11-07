@@ -16,7 +16,14 @@ Es el repositorio de referencia del curso. Cada sesión tiene su solución compl
 | `feature/sesion4` | Logs estructurados, Sentry y métricas. |
 | `release/x.y.z` | Versión candidata. Se despliega en staging, se etiqueta y se integra en `main`. |
 
-Flujo: `feature/sesionX` sale de `develop` y vuelve a `develop`. Al final, de `develop` sale `release/1.0.0`; se prueba en staging, se etiqueta `v1.0.0` y se integra en `main` (producción) y de vuelta en `develop`.
+Flujo:
+
+1. `feature/sesionX` sale de `develop` y vuelve a `develop` mediante un pull request.
+2. Al final, de `develop` sale `release/1.0.0` y se prueba en staging.
+3. Se etiqueta `v1.0.0` y se integra con un PR en `main`, que es producción.
+4. Se integra con otro PR de vuelta en `develop`.
+
+`develop` y `main` están protegidas: no admiten push directo y todo entra por pull request.
 
 Referencia: [Oneflow, a Git branching model and workflow](https://www.endoflineblog.com/oneflow-a-git-branching-model-and-workflow).
 
