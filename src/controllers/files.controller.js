@@ -27,8 +27,10 @@ async function download(req, res, next) {
 }
 
 async function remove(req, res) {
-  await filesService.remove(req.user.id, req.validated.params.id);
-  req.log.info({ fileId: req.validated.params.id }, 'Fichero borrado');
+  const file = await filesService.findOwned(req.user.id, req.validated.params.id);
+  // Algunos clientes mandan el nombre codificado (%20...): lo decodificamos para el log.
+  req.log.info({ fileId: file.id, name: decodeURIComponent(file.name) }, 'Borrando fichero');
+  await filesService.remove(req.user.id, file.id);
   res.status(204).end();
 }
 

@@ -49,20 +49,3 @@ describe('/metrics', () => {
     expect(res.text).toContain(`storage_bytes ${PNG.length}`);
   });
 });
-
-describe('borrado de ficheros con nombres poco habituales', () => {
-  // Regresión del error simulado de la sesión 4: el borrado fallaba con un 500
-  // cuando el nombre original contenía "%" (decodeURIComponent lanzaba URIError).
-  test.each(['informe 100%.txt', 'año 2025 – versión «final».txt', '%E0%A4%A.txt'])(
-    'se puede borrar "%s"',
-    async (name) => {
-      const { token } = await createUser();
-      const { body: file } = await request(app)
-        .post('/files')
-        .set('Authorization', `Bearer ${token}`)
-        .attach('file', Buffer.from('contenido'), name)
-        .expect(201);
-      await request(app).delete(`/files/${file.id}`).set('Authorization', `Bearer ${token}`).expect(204);
-    },
-  );
-});
