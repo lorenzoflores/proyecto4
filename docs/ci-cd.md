@@ -5,7 +5,7 @@
 | Workflow | Cuándo | Qué hace |
 | --- | --- | --- |
 | `ci.yml` | Lo llaman los otros tres | Lint y tests con PostgreSQL, `npm audit` de producción, búsqueda de secretos con gitleaks y `docker build`. |
-| `pr.yml` | Pull request contra `develop` | `ci.yml` y además la revisión de seguridad de Claude Code, que deja un comentario en el PR. |
+| `pr.yml` | Pull request contra `develop` | `ci.yml` y además la auditoría de seguridad de Claude Code: deja un comentario en el PR y bloquea el merge si encuentra algo crítico o alto. |
 | `staging.yml` | Push a `release/**` | `ci.yml`, despliegue en el entorno `staging` de Railway y comprobación de `/health`. |
 | `production.yml` | Push a `main` | `ci.yml`, despliegue en el entorno `production` de Railway y comprobación de `/health`. |
 
@@ -41,7 +41,15 @@ En *Settings → Rules → Rulesets*, crea una regla para `develop` y otra para 
 
 En `main`, además, permite solo los merges que vengan de `release/*`. Esto se revisa en el PR de la release.
 
-La revisión del agente no aparece como check obligatorio. Es un comentario que ayuda a revisar, no un sustituto de la revisión de una persona.
+Añade también `Revisión de seguridad (Claude Code)` como check obligatorio en `develop`. El agente deja un comentario con sus hallazgos y escribe un veredicto: si encuentra algo crítico o alto, el job falla y el PR no se puede integrar.
+
+Ten en cuenta sus límites:
+
+- Puede dar falsos positivos.
+- Cada ejecución cuesta dinero de la clave de API.
+- Un PR malicioso podría intentar convencerle de que todo está bien (prompt injection).
+
+Por eso complementa la revisión de una persona, pero no la sustituye.
 
 ## 4. Flujo de una release (Oneflow)
 
