@@ -15,6 +15,8 @@ Es el repositorio de referencia del curso. Cada sesión tiene su solución compl
 | `feature/sesion3` | Pipeline de CI/CD con auditoría automática del agente. |
 | `feature/sesion4` | Logs estructurados, Sentry y métricas. |
 | `release/x.y.z` | Versión candidata. Se despliega en staging, se etiqueta y se integra en `main`. |
+| `demo/vulnerabilidad` | Práctica de la sesión 3: un PR con una vulnerabilidad que el agente debe bloquear. **No se integra nunca.** |
+| `demo/error-borrado` | Práctica de la sesión 4: el error simulado que se despliega en staging para diagnosticarlo. **No se integra nunca.** |
 
 Flujo:
 
